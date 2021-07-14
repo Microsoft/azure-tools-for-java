@@ -19,11 +19,11 @@ public class CommonUtil {
 
     public static final String OPERATION_NAME = "operationName";
     public static final String OPERATION_ID = "operationId";
-    public static final String ERROR_CODE = "errorCode";
-    public static final String ERROR_MSG = "message";
-    public static final String ERROR_TYPE = "errorType";
-    public static final String ERROR_CLASSNAME = "errorClassName";
-    public static final String ERROR_STACKTRACE = "errorStackTrace";
+    public static final String ERROR_CODE = "error.code";
+    public static final String ERROR_MSG = "error.message";
+    public static final String ERROR_TYPE = "error.type";
+    public static final String ERROR_CLASSNAME = "error.className";
+    public static final String ERROR_STACKTRACE = "error.stack";
     public static final String DURATION = "duration";
     public static final String SERVICE_NAME = "serviceName";
     public static final String TIMESTAMP = "timestamp";
