@@ -5,7 +5,7 @@
 
 package com.microsoft.azuretools.telemetrywrapper;
 
-import com.microsoft.applicationinsights.TelemetryClient;
+import com.microsoft.azure.toolkit.lib.common.telemetry.AzureTelemetryClient;
 import com.microsoft.azuretools.adauth.StringUtils;
 import org.apache.commons.lang3.tuple.MutableTriple;
 import org.joda.time.Instant;
@@ -27,7 +27,7 @@ public class CommonUtil {
     public static final String DURATION = "duration";
     public static final String SERVICE_NAME = "serviceName";
     public static final String TIMESTAMP = "timestamp";
-    public static TelemetryClient client;
+    public static AzureTelemetryClient client;
     private static List<MutableTriple<EventType, Map, Map>> cachedEvents = new ArrayList<>();
 
     public static Map<String, String> mergeProperties(Map<String, String> properties) {
@@ -50,7 +50,6 @@ public class CommonUtil {
         if (client != null) {
             final String eventName = getFullEventName(eventType);
             client.trackEvent(eventName, mutableProps, metrics);
-            client.flush();
         } else {
             cacheEvents(eventType, mutableProps, metrics);
         }
@@ -59,7 +58,6 @@ public class CommonUtil {
     public static void clearCachedEvents() {
         if (client != null) {
             cachedEvents.forEach(triple -> client.trackEvent(getFullEventName(triple.left), triple.middle, triple.right));
-            client.flush();
             cachedEvents.clear();
         }
     }
