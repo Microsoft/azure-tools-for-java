@@ -22,7 +22,8 @@ import com.microsoft.azuretools.authmanage.AuthMethod;
 import com.microsoft.azuretools.authmanage.CommonSettings;
 import com.microsoft.azuretools.authmanage.models.AuthMethodDetails;
 import com.microsoft.azuretools.authmanage.models.SubscriptionDetail;
-import com.microsoft.azuretools.core.mvp.ui.base.MvpUIHelperFactory;
+import com.microsoft.azuretools.securestore.SecureStore;
+import com.microsoft.azuretools.service.ServiceManager;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
@@ -35,6 +36,17 @@ import java.util.stream.Collectors;
 
 
 public class IdentityAzureManager extends AzureManagerBase {
+
+    private SecureStore secureStore;
+
+    private static final String LEGACY_SECURE_STORE_SERVICE = "ADAuthManager";
+    private static final String LEGACY_SECURE_STORE_KEY = "cachedAuthResult";
+
+    public IdentityAzureManager() {
+        secureStore = ServiceManager.getServiceProvider(SecureStore.class);
+        // forgot old password, since in new auth, refresh token will be stored through azure identity persistence layer
+        secureStore.forgetPassword(LEGACY_SECURE_STORE_SERVICE, LEGACY_SECURE_STORE_KEY);
+    }
 
     protected AzureTokenCredentials getCredentials(String tenantId) {
         return Azure.az(AzureAccount.class).account().getTokenCredentialForTenantV1(tenantId);
@@ -127,8 +139,8 @@ public class IdentityAzureManager extends AzureManagerBase {
                 if (StringUtils.isNotBlank(authMethodDetails.getCertificate())) {
                     auth.setCertificate(authMethodDetails.getCertificate());
                 } else {
-                    String key = MvpUIHelperFactory.getInstance().getMvpUIHelper().loadPasswordFromSecureStore(
-                        StringUtils.joinWith("|", "account", authMethodDetails.getClientId()));
+                    String key = secureStore.loadPassword("account",
+                        getSecureStoreKey(authMethodDetails.getClientId()));
                     if (StringUtils.isBlank(key)) {
                         throw new AzureToolkitRuntimeException(
                                 String.format("Cannot find SP security key for '%s' in intellij key pools.", authMethodDetails.getClientId()));
@@ -154,15 +166,19 @@ public class IdentityAzureManager extends AzureManagerBase {
 
         } catch (Throwable e) {
             if (StringUtils.isNotBlank(authMethodDetails.getClientId()) && authMethodDetails.getAuthType() == AuthType.SERVICE_PRINCIPAL) {
-                MvpUIHelperFactory.getInstance().getMvpUIHelper().forgetPasswordFromSecureStore(
-                    StringUtils.joinWith("|", "account", authMethodDetails.getClientId()));
+                secureStore.forgetPassword("account", getSecureStoreKey(authMethodDetails.getClientId()));
             }
             return Mono.error(new AzureToolkitRuntimeException(String.format("Cannot restore credentials due to error: %s", e.getMessage())));
         }
     }
 
+    private static String getSecureStoreKey(String clientId) {
+        return StringUtils.joinWith("|", "account", clientId);
+    }
+
     public Mono<AuthMethodDetails> signInServicePrincipal(AuthConfiguration auth) {
         return Azure.az(AzureAccount.class).loginAsync(auth, false).flatMap(Account::continueLogin).map(account -> {
+            secureStore.savePassword("account", getSecureStoreKey(auth.getClient()), auth.getKey());
             AuthMethodDetails authMethodDetails = fromAccountEntity(account.getEntity());
             // special handle for SP
             authMethodDetails.setCertificate(auth.getCertificate());
@@ -205,8 +221,7 @@ public class IdentityAzureManager extends AzureManagerBase {
         final AzureAccount az = Azure.az(AzureAccount.class);
         final AccountEntity account = az.account().getEntity();
         if (StringUtils.isNotBlank(account.getClientId()) && account.getType() == AuthType.SERVICE_PRINCIPAL) {
-            MvpUIHelperFactory.getInstance().getMvpUIHelper().forgetPasswordFromSecureStore(
-                StringUtils.joinWith("|", "account", account.getClientId()));
+            secureStore.forgetPassword("account", getSecureStoreKey(account.getClientId()));
         }
         az.logout();
         super.drop();

@@ -30,4 +30,13 @@ public interface SecureStore {
      * @param password the password for serviceName and userName combination to store, null for cleaning the saved one
      */
     void savePassword(@NotNull String serviceName, @NotNull String userName, @Nullable String password);
+
+
+    /**
+     * Remove password or credential from the secure store
+     *
+     * @param serviceName the unique service name
+     * @param userName the user name or key for the credential
+     */
+    void forgetPassword(@NotNull String serviceName, @NotNull String userName);
 }
