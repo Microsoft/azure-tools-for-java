@@ -156,8 +156,8 @@
     <runLineMarkerContributor language="JAVA" id="functionRunLineMarkerProvider"
                               implementationClass="com.microsoft.azure.toolkit.intellij.function.runner.FunctionRunLineMarkerProvider"/>
 
-    <postStartupActivity implementation="com.microsoft.azure.toolkit.intellij.connector.mysql.MySQLDatabaseResourceConnectionStartupActivity"/>
-    <postStartupActivity implementation="com.microsoft.azure.toolkit.intellij.connector.sql.SQLDatabaseResourceConnectionStartupActivity"/>
+    <preloadingActivity implementation="com.microsoft.azure.toolkit.intellij.connector.mysql.MySQLConnectionDefinitionPreloadingActivity"/>
+    <preloadingActivity implementation="com.microsoft.azure.toolkit.intellij.connector.sql.SqlServerConnectionDefinitionPreloadingActivity"/>
     <completion.contributor language="Properties" implementationClass="com.microsoft.azure.toolkit.intellij.connector.mysql.MySQLSpringDatasourceCompletionContributor"/>
     <completion.contributor language="Properties" implementationClass="com.microsoft.azure.toolkit.intellij.connector.sql.SQLSpringDatasourceCompletionContributor"/>
     <codeInsight.lineMarkerProvider language="Properties" implementationClass="com.microsoft.azure.toolkit.intellij.connector.database.SpringDatasourceLineMarkerProvider"/>

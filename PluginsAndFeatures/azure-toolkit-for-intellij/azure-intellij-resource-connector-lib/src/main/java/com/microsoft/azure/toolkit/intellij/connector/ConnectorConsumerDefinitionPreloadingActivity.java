@@ -5,13 +5,14 @@
 
 package com.microsoft.azure.toolkit.intellij.connector;
 
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.startup.StartupActivity;
+import com.intellij.openapi.application.PreloadingActivity;
+import com.intellij.openapi.progress.ProgressIndicator;
 import org.jetbrains.annotations.NotNull;
 
-public class ConnectorStartupActivity implements StartupActivity {
+public class ConnectorConsumerDefinitionPreloadingActivity extends PreloadingActivity {
+
     @Override
-    public void runActivity(@NotNull Project project) {
+    public void preload(@NotNull ProgressIndicator progressIndicator) {
         ResourceManager.registerDefinition(ModuleResource.Definition.IJ_MODULE);
     }
 }
