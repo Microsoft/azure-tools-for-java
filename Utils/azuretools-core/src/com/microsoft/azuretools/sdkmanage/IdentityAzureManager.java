@@ -44,8 +44,10 @@ public class IdentityAzureManager extends AzureManagerBase {
 
     public IdentityAzureManager() {
         secureStore = ServiceManager.getServiceProvider(SecureStore.class);
-        // forgot old password, since in new auth, refresh token will be stored through azure identity persistence layer
-        secureStore.forgetPassword(LEGACY_SECURE_STORE_SERVICE, LEGACY_SECURE_STORE_KEY);
+        if (secureStore != null) {
+            // forgot old password, since in new auth, refresh token will be stored through azure identity persistence layer
+            secureStore.forgetPassword(LEGACY_SECURE_STORE_SERVICE, LEGACY_SECURE_STORE_KEY);
+        }
     }
 
     protected AzureTokenCredentials getCredentials(String tenantId) {
@@ -139,7 +141,7 @@ public class IdentityAzureManager extends AzureManagerBase {
                 if (StringUtils.isNotBlank(authMethodDetails.getCertificate())) {
                     auth.setCertificate(authMethodDetails.getCertificate());
                 } else {
-                    String key = secureStore.loadPassword("account",
+                    String key = secureStore == null ? null : secureStore.loadPassword("account",
                         getSecureStoreKey(authMethodDetails.getClientId()));
                     if (StringUtils.isBlank(key)) {
                         throw new AzureToolkitRuntimeException(
@@ -165,7 +167,8 @@ public class IdentityAzureManager extends AzureManagerBase {
             }
 
         } catch (Throwable e) {
-            if (StringUtils.isNotBlank(authMethodDetails.getClientId()) && authMethodDetails.getAuthType() == AuthType.SERVICE_PRINCIPAL) {
+            if (StringUtils.isNotBlank(authMethodDetails.getClientId())
+                && authMethodDetails.getAuthType() == AuthType.SERVICE_PRINCIPAL && secureStore != null) {
                 secureStore.forgetPassword("account", getSecureStoreKey(authMethodDetails.getClientId()));
             }
             return Mono.error(new AzureToolkitRuntimeException(String.format("Cannot restore credentials due to error: %s", e.getMessage())));
@@ -178,7 +181,9 @@ public class IdentityAzureManager extends AzureManagerBase {
 
     public Mono<AuthMethodDetails> signInServicePrincipal(AuthConfiguration auth) {
         return Azure.az(AzureAccount.class).loginAsync(auth, false).flatMap(Account::continueLogin).map(account -> {
-            secureStore.savePassword("account", getSecureStoreKey(auth.getClient()), auth.getKey());
+            if (secureStore != null) {
+                secureStore.savePassword("account", getSecureStoreKey(auth.getClient()), auth.getKey());
+            }
             AuthMethodDetails authMethodDetails = fromAccountEntity(account.getEntity());
             // special handle for SP
             authMethodDetails.setCertificate(auth.getCertificate());
@@ -220,7 +225,7 @@ public class IdentityAzureManager extends AzureManagerBase {
         }
         final AzureAccount az = Azure.az(AzureAccount.class);
         final AccountEntity account = az.account().getEntity();
-        if (StringUtils.isNotBlank(account.getClientId()) && account.getType() == AuthType.SERVICE_PRINCIPAL) {
+        if (StringUtils.isNotBlank(account.getClientId()) && account.getType() == AuthType.SERVICE_PRINCIPAL && secureStore != null) {
             secureStore.forgetPassword("account", getSecureStoreKey(account.getClientId()));
         }
         az.logout();
